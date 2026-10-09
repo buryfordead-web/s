@@ -1,0 +1,96 @@
+{
+  "_meta": {
+    "project": "Steve in DMC5 (working title)",
+    "host": {"game": "devil-may-cry-5", "role": "primary", "loader": "reframework"},
+    "companion": {"game": "minecraft-java", "role": "companion", "folder_token": "{game:minecraft-java}"},
+    "multiplayer": false,
+    "version": "v1 bare minimum",
+    "rules": [
+      "Sheets are the source of truth: change the sheet before the code.",
+      "Cells marked TBD must be filled (verified in game / game_info) before preflight passes.",
+      "No Minecraft or DMC5 assets are shipped; Minecraft assets are read at runtime from {game:minecraft-java}."
+    ]
+  },
+  "kit_items": {
+    "columns": ["id", "hotbar_slot", "display_name", "mc_asset_source", "damage", "cooldown_s", "range_m", "hit_sound", "notes"],
+    "rows": [
+      {"id": "sword", "hotbar_slot": 1, "display_name": "Sword", "mc_asset_source": "TBD: icon+sound from MC assets index", "damage": 7, "cooldown_s": 0.6, "range_m": 3.0, "hit_sound": "entity.player.attack.strong", "notes": "Melee swing, crit when falling"},
+      {"id": "bow", "hotbar_slot": 2, "display_name": "Bow", "mc_asset_source": "TBD", "damage": 6, "cooldown_s": 1.0, "range_m": 40, "hit_sound": "entity.arrow.hit_player", "notes": "Charge 1s for full damage; needs arrow count"},
+      {"id": "shield", "hotbar_slot": 3, "display_name": "Shield", "mc_asset_source": "TBD", "damage": 0, "cooldown_s": 0, "range_m": 0, "hit_sound": "item.shield.block", "notes": "Hold to block frontal hits; 5s disable after boss heavy hit"},
+      {"id": "arrows", "hotbar_slot": 4, "display_name": "Arrows", "mc_asset_source": "TBD", "damage": 0, "cooldown_s": 0, "range_m": 0, "hit_sound": "none", "notes": "Ammo counter, refills between stages"}
+    ]
+  },
+  "player_stats": {
+    "columns": ["id", "value", "replaces_dmc5", "notes"],
+    "rows": [
+      {"id": "max_hearts", "value": 10, "replaces_dmc5": "vitality gauge", "notes": "20 HP shown as 10 hearts; DMC5 vitality hidden"},
+      {"id": "regen_per_s", "value": 0, "replaces_dmc5": "none", "notes": "No regen in v1"},
+      {"id": "damage_sound", "value": "entity.player.hurt", "replaces_dmc5": "hurt voice", "notes": ""},
+      {"id": "player_character", "value": "TBD: Steve model path vs. first-person/proxy", "replaces_dmc5": "Nero/Dante model", "notes": "Hard problem, see risks"}
+    ]
+  },
+  "enemies": {
+    "columns": ["id", "dmc5_enemy_ref", "hp", "damage_to_player", "attack_windup_s", "stage_ref", "count"],
+    "rows": [
+      {"id": "weak_demon", "dmc5_enemy_ref": "TBD: Empusa or Mephisto-class, verify in game", "hp": 20, "damage_to_player": 2, "attack_windup_s": 0.8, "stage_ref": "tutorial_sword", "count": 3},
+      {"id": "ranged_demon", "dmc5_enemy_ref": "TBD", "hp": 12, "damage_to_player": 2, "attack_windup_s": 1.2, "stage_ref": "tutorial_bow", "count": 2},
+      {"id": "heavy_demon", "dmc5_enemy_ref": "TBD", "hp": 30, "damage_to_player": 4, "attack_windup_s": 1.0, "stage_ref": "tutorial_block", "count": 1}
+    ]
+  },
+  "boss": {
+    "columns": ["id", "dmc5_boss_ref", "hp", "phases", "attack_ids", "arena_ref", "damage_to_player"],
+    "rows": [
+      {"id": "boss_1", "dmc5_boss_ref": "TBD: first mission boss, verify in game", "hp": 300, "phases": 2, "attack_ids": ["slam", "charge", "ranged_burst"], "arena_ref": "arena_1", "damage_to_player": 4}
+    ]
+  },
+  "tutorial_stages": {
+    "columns": ["id", "order", "location_ref", "teaches", "spawns", "complete_when", "next"],
+    "rows": [
+      {"id": "tutorial_sword", "order": 1, "location_ref": "street_1", "teaches": "sword swing", "spawns": "weak_demon", "complete_when": "all spawned enemies dead", "next": "tutorial_bow"},
+      {"id": "tutorial_bow", "order": 2, "location_ref": "street_1", "teaches": "bow shot", "spawns": "ranged_demon", "complete_when": "all spawned enemies dead", "next": "tutorial_block"},
+      {"id": "tutorial_block", "order": 3, "location_ref": "street_1", "teaches": "shield block", "spawns": "heavy_demon", "complete_when": "enemy dead", "next": "boss_fight"},
+      {"id": "boss_fight", "order": 4, "location_ref": "arena_1", "teaches": "none", "spawns": "boss_1", "complete_when": "boss dead (v1: no win screen, just end state)", "next": null}
+    ]
+  },
+  "locations": {
+    "columns": ["id", "dmc5_stage_ref", "player_spawn", "notes"],
+    "rows": [
+      {"id": "street_1", "dmc5_stage_ref": "TBD: street area from an early mission", "player_spawn": "TBD", "notes": "Load via REFramework stage/scene call or teleport"},
+      {"id": "arena_1", "dmc5_stage_ref": "TBD: first boss arena", "player_spawn": "TBD", "notes": ""}
+    ]
+  },
+  "hud": {
+    "columns": ["id", "drawn_with", "source_asset", "position", "notes"],
+    "rows": [
+      {"id": "hearts", "drawn_with": "REFramework imgui/draw", "source_asset": "{game:minecraft-java} icons texture", "position": "bottom center above hotbar", "notes": "Hide DMC5 vitality gauge"},
+      {"id": "hotbar", "drawn_with": "REFramework imgui/draw", "source_asset": "{game:minecraft-java} widgets texture", "position": "bottom center", "notes": "Keys 1-4 select slot"}
+    ]
+  },
+  "reframework_hooks": {
+    "columns": ["id", "purpose", "type", "target", "status"],
+    "rows": [
+      {"id": "hook_damage_in", "purpose": "Replace DMC5 damage to player with hearts damage", "type": "Lua hook / managed method", "target": "TBD", "status": "unverified"},
+      {"id": "hook_enemy_hp", "purpose": "Apply sword/arrow damage to DMC5 enemies", "type": "Lua hook", "target": "TBD", "status": "unverified"},
+      {"id": "hook_input", "purpose": "Map slot keys, attack, block, bow charge", "type": "REFramework input", "target": "TBD", "status": "unverified"},
+      {"id": "hook_stage_load", "purpose": "Move player between street and arena", "type": "Lua", "target": "TBD", "status": "unverified"},
+      {"id": "hook_hide_dmc_hud", "purpose": "Hide original health UI", "type": "Lua", "target": "TBD", "status": "unverified"}
+    ]
+  },
+  "minecraft_asset_reads": {
+    "columns": ["id", "needed_for", "path_in_mc_install", "read_method", "status"],
+    "rows": [
+      {"id": "mc_assets_index", "needed_for": "sounds (hashed objects)", "path_in_mc_install": "{game:minecraft-java}/assets/indexes/*.json + objects/", "read_method": "TBD", "status": "unverified"},
+      {"id": "mc_client_jar", "needed_for": "textures (steve, icons, hud)", "path_in_mc_install": "{game:minecraft-java}/versions/<ver>/<ver>.jar", "read_method": "TBD: unzip at runtime in a helper, not shipped", "status": "unverified"}
+    ]
+  },
+  "preflight_open_items": [
+    "Fill every TBD cell by checking in game and game_info.",
+    "Confirm REFramework can load external PNG/OGG at runtime (Lua alone may not; a small plugin DLL may be needed and must be bundled with license credit).",
+    "Confirm what Melty's companion-folder mapping gives ({game:minecraft-java} must resolve to the Minecraft game dir containing assets/ and versions/).",
+    "Decide Steve rendering approach (see risks)."
+  ],
+  "risks": [
+    "Replacing the player model with Steve in RE Engine is the hardest part. Fallback: keep Nero/Dante body hidden and render Steve's arm/held item first-person style, or show a Steve skin texture on an existing mesh.",
+    "Minecraft sounds and textures live in hashed asset objects and the client jar. Reading them at runtime needs an unzip/OGG-decode helper; if impossible, build the closest version that can, without look-alike stand-ins."
+  ]
+}
